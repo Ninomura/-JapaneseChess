@@ -3,6 +3,7 @@
 #define WindowWidthSize 960  //ウィンドウのX幅
 #define WindowHeightSize 620 //ウィンドウのY幅
 #define BoardImageSize 620   //盤面を表す画像サイズ
+#define OfBoardImageSize 300
 #define MapSize 9            //盤面のサイズ比
 
 //画像ハンドル
@@ -49,24 +50,15 @@ enum PiecesType
 //盤面上の駒の状態
 typedef struct
 {
+	//駒の座標
+	int y, x;
 	//誰の駒か
 	GameOrderMode PiecesGOM;
 	//駒の種類
 	PiecesType Type;
 	//成っているか
 	bool Promoted;
-	//取ることが出来るか
-	bool Chooseable;
+	//盤面上か
+	bool OnBoard;
 	
 } OnBoardPieceState;
-
-//持ち駒の状態
-typedef struct
-{
-	//誰の駒か
-	GameOrderMode PiecesGOM;
-
-	//駒の種類
-	PiecesType Type;
-
-}OfBoardPieceState;

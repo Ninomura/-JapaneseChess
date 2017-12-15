@@ -286,6 +286,9 @@ int _stdcall WinMain
 	//駒のサイズ
 	int PieceImageSize = BoardImageSize / MapSize - 6;
 
+	int Count;
+
+	int SetPiece;
 	//マウスフラグ
 	bool MouseFlag;
 	//ウィンドウフラグ
@@ -307,6 +310,20 @@ int _stdcall WinMain
 
 	imgBoard.Load(_T("Texture/board.png"));
 
+	//手持ち盤の画像を設定
+	Sprite spriteImgOfBoard[2];
+	Texture imgOfBoard[2];
+	spriteImgOfBoard[0].SetSize(OfBoardImageSize, OfBoardImageSize);
+	spriteImgOfBoard[0].SetPos(BoardImageSize+((WindowWidthSize - BoardImageSize)/2),
+		OfBoardImageSize / 2);
+
+	spriteImgOfBoard[1].SetSize(OfBoardImageSize, OfBoardImageSize);
+	spriteImgOfBoard[1].SetPos(BoardImageSize+((WindowWidthSize - BoardImageSize)/2),
+		OfBoardImageSize / 2 + WindowHeightSize - OfBoardImageSize);
+
+	imgOfBoard[0].Load(_T("Texture/of_board.png"));
+	imgOfBoard[1].Load(_T("Texture/of_board.png"));
+
 	//ウィンドウの画像を設定
 	Sprite spriteImgWindow;
 	Texture imgWindow;
@@ -316,27 +333,68 @@ int _stdcall WinMain
 	imgWindow.Load(_T("Texture/window.png"));
 
 	//駒の画像を設定
-	Sprite spriteImgPiece[MapSize][MapSize];
-	Texture imgPiece[MapSize][MapSize];
+	Sprite spriteImgPiece[40];
+	Texture imgPiece[40];
+
+	for (int Count = 0; Count < 40; Count++)
+	{
+		//駒
+		spriteImgPiece[Count].SetSize(PieceImageSize, PieceImageSize);
+		imgPiece[Count].Load(_T("Texture/piece.png"));
+		imgPiece[Count].SetDivide(8, 2);
+	}
+
+	//手持ちの駒の画像を設定
+	Sprite spriteImgOfPiece[14];
+	Texture imgOfPiece[14];
+
+	for (int Count = 0; Count < 14; Count++)
+	{
+		//駒
+		spriteImgOfPiece[Count].SetSize(PieceImageSize, PieceImageSize);
+		spriteImgOfPiece[Count].SetPos(BoardImageSize + (Count % 7 % 4 + 1)*((WindowWidthSize - BoardImageSize) / 6) + PieceImageSize / 2,
+			Count / 7 * 320 + ((Count - Count / 7 * 7) / 4) * PieceImageSize * 2 + PieceImageSize);
+		imgOfPiece[Count].Load(_T("Texture/piece.png"));
+		imgOfPiece[Count].SetDivide(8, 2);
+
+		imgOfPiece[Count].SetNum(((Count % 7) * 2) % 8, (Count - Count / 7 * 7) / 4);
+	}
+
+	//手持ちの駒数の画像を設定
+	Sprite spriteImgOfPieceNumber[14];
+	Texture imgOfPieceNumber[14];
+
+	Sprite spriteImgOfPieceNumber2[14];
+	Texture imgOfPieceNumber2[14];
+
+	for (int Count = 0; Count < 14; Count++)
+	{
+		//１桁
+		spriteImgOfPieceNumber[Count].SetSize(PieceImageSize/4, PieceImageSize/3);
+		spriteImgOfPieceNumber[Count].SetPos(BoardImageSize + (Count % 7 % 4 + 1)*((WindowWidthSize - BoardImageSize) / 6) + PieceImageSize / 2,
+			Count / 7 * 320 + ((Count - Count / 7 * 7) / 4) * PieceImageSize * 2 + PieceImageSize*1.7);
+		imgOfPieceNumber[Count].Load(_T("Texture/number.png"));
+		imgOfPieceNumber[Count].SetDivide(10, 1);
+
+		//２桁
+		spriteImgOfPieceNumber2[Count].SetSize(PieceImageSize / 4, PieceImageSize / 3);
+		spriteImgOfPieceNumber2[Count].SetPos(BoardImageSize + (Count % 7 % 4 + 1)*((WindowWidthSize - BoardImageSize) / 6) + PieceImageSize / 2 - PieceImageSize / 4,
+			Count / 7 * 320 + ((Count - Count / 7 * 7) / 4) * PieceImageSize * 2 + PieceImageSize*1.7);
+		imgOfPieceNumber2[Count].Load(_T("Texture/number.png"));
+		imgOfPieceNumber2[Count].SetDivide(10, 1);
+	}
 
 	//カーソルの画像を設定
 	Sprite spriteImgCursor[MapSize][MapSize];
 	Texture imgCursor[MapSize][MapSize];
 
-	for (int yCount = 0; yCount < MapSize; yCount++)
+	for (int CountY = 0; CountY < MapSize; CountY++)
 	{
-		for (int xCount = 0; xCount < MapSize; xCount++)
+		for (int CountX = 0; CountX < MapSize; CountX++)
 		{
-			//駒
-			spriteImgPiece[yCount][xCount].SetSize(PieceImageSize, PieceImageSize);
-
-			imgPiece[yCount][xCount].Load(_T("Texture/piece.png"));
-			imgPiece[yCount][xCount].SetDivide(8, 2);
-
 			//カーソル
-			spriteImgCursor[yCount][xCount].SetSize(PieceImageSize, PieceImageSize);
-
-			imgCursor[yCount][xCount].Load(_T("Texture/cursor.png"));
+			spriteImgCursor[CountY][CountX].SetSize(PieceImageSize, PieceImageSize);
+			imgCursor[CountY][CountX].Load(_T("Texture/cursor.png"));
 		}
 	}
 
@@ -345,8 +403,6 @@ int _stdcall WinMain
 
 	//初期の順番をプレイヤー１に設定
 	GameOrderMode GOM = Player01;
-	//持ち駒の宣言
-	OfBoardPieceState OBPS;
 
 	PieceProcessing PP;
 
@@ -385,6 +441,7 @@ int _stdcall WinMain
 			case Game_Mode::GameStartProcessing:
 
 				PP.~PieceProcessing();
+				PP.PieceChooseableReset();
 
 				MouseFlag = false;
 				TypeChangeFlag = false;
@@ -398,7 +455,7 @@ int _stdcall WinMain
 
 				if (TypeChangeFlag == true)
 				{
-					PP.PieceMove(SetMousePosY,SetMousePosX,MousePosY,MousePosX);
+					PP.PieceMove(SetPiece,MousePosY,MousePosX);
 					PP.PieceChooseableReset();
 
 					TypeChangeFlag = false;
@@ -427,16 +484,61 @@ int _stdcall WinMain
 					SetMousePosX = (mousePos.X() - 32.0) / PieceImageSize;
 					SetMousePosY = (mousePos.Y() - 32.0) / PieceImageSize;
 
-					if (MousePosX < 9&&MousePosY < 9)
+					if (SetMousePosX < 9&& SetMousePosY < 9)
 					{
-						if (PP.PS[SetMousePosY][SetMousePosX].PiecesGOM == GOM)
+
+						for (SetPiece = 0; SetPiece < 40; SetPiece++)
 						{
-							//選択可能描画
-							PP.PieceChooseable
-							(SetMousePosY, SetMousePosX,
-							 PP.PS[SetMousePosY][SetMousePosX].Type,
-							 PP.PS[SetMousePosY][SetMousePosX].Promoted,
-							 GOM);
+							if (PP.PS[SetPiece].y == SetMousePosY
+								&& PP.PS[SetPiece].x == SetMousePosX
+								&& PP.PS[SetPiece].PiecesGOM == GOM
+								&&PP.PS[SetPiece].OnBoard == true)
+							{
+								//選択可能描画
+								PP.PieceChooseable
+								(SetPiece, GOM);
+								break;
+							}
+						}
+					}
+					else
+					{
+
+						SetMousePosX = mousePos.X();
+						SetMousePosY = mousePos.Y();
+
+						for (int Mousecount = 0; Mousecount < 14; Mousecount++)
+						{
+							if (SetMousePosX >= (BoardImageSize + (Mousecount % 7 % 4 + 1)*((WindowWidthSize - BoardImageSize) / 6) + PieceImageSize / 2) - PieceImageSize / 2
+							 && SetMousePosX <= (BoardImageSize + (Mousecount % 7 % 4 + 1)*((WindowWidthSize - BoardImageSize) / 6) + PieceImageSize / 2) + PieceImageSize / 2
+							 && SetMousePosY >= (Mousecount / 7 * 320 + ((Mousecount - Mousecount / 7 * 7) / 4) * PieceImageSize * 2 + PieceImageSize) - PieceImageSize / 2
+							 && SetMousePosY <= (Mousecount / 7 * 320 + ((Mousecount - Mousecount / 7 * 7) / 4) * PieceImageSize * 2 + PieceImageSize) + PieceImageSize / 2)
+							{
+								if(Mousecount < 7 && GOM == Player02
+									|| Mousecount >= 7 && GOM == Player01)
+								{
+									for (SetPiece = 0; SetPiece < 40; SetPiece++)
+									{
+										if ((Mousecount % 7 == 0 && PP.PS[SetPiece].Type != Pawn
+											|| Mousecount % 7 == 1 && PP.PS[SetPiece].Type != Lance
+											|| Mousecount % 7 == 2 && PP.PS[SetPiece].Type != Knight
+											|| Mousecount % 7 == 3 && PP.PS[SetPiece].Type != SilverGeneral
+											|| Mousecount % 7 == 4 && PP.PS[SetPiece].Type != GoldGeneral
+											|| Mousecount % 7 == 5 && PP.PS[SetPiece].Type != Rook
+											|| Mousecount % 7 == 6 && PP.PS[SetPiece].Type != Bishop)){}
+										else
+										{
+											if ((PP.PS[SetPiece].OnBoard == false)
+												&& ((Mousecount < 7 && PP.PS[SetPiece].PiecesGOM == Player02)
+													|| Mousecount >= 7 && PP.PS[SetPiece].PiecesGOM == Player01))
+											{
+												PP.OfPieceProcessing(SetPiece, Mousecount);
+												break;
+											}
+										}
+									}
+								}
+							}
 						}
 					}
 				}
@@ -444,7 +546,7 @@ int _stdcall WinMain
 				{
 					;
 				}
-				else if (PP.PS[SetMousePosY][SetMousePosX].PiecesGOM == GOM && MouseFlag == true && !(pDi->MouseButton(0)))
+				else if (PP.PS[SetPiece].PiecesGOM == GOM && MouseFlag == true && !(pDi->MouseButton(0)))
 				{
 
 					//マウス座標を取得
@@ -455,41 +557,60 @@ int _stdcall WinMain
 
 					if (MousePosX < 9 && MousePosY < 9)
 					{
-						if (PP.PS[MousePosY][MousePosX].Chooseable == true)
+						if (PP.Chooseable[MousePosY][MousePosX] == true)
 						{
 							//駒があれば持ち駒を増やす
-							if (PP.PS[MousePosY][MousePosX].Type != Null)
+							for (int i = 0; i < 40; i++)
 							{
-								;
+								if(PP.PS[i].y == MousePosY
+									&& PP.PS[i].x == MousePosX
+									&& PP.PS[i].PiecesGOM != GOM
+									&& PP.PS[i].OnBoard == true
+									&& PP.PS[i].Type == King)
+								{
+									Mode = GameEndProcessing;
+									break;
+								}
+								else if (PP.PS[i].y == MousePosY
+									&& PP.PS[i].x == MousePosX
+									&& PP.PS[i].PiecesGOM != GOM
+									&& PP.PS[i].OnBoard == true)
+								{
+									PP.PS[i].PiecesGOM = GOM;
+									PP.PS[i].OnBoard = false;
+									PP.PS[i].Promoted = false;
+									break;
+								}
 							}
 
 							//成るかどうかの判断を呼び出す
 							//それ以上進めなくなる駒は自動的に成る
-							if (((PP.PS[SetMousePosY][SetMousePosX].Type == Pawn
-							  || PP.PS[SetMousePosY][SetMousePosX].Type == Lance)
+							if (((PP.PS[SetPiece].Type == Pawn
+							  || PP.PS[SetPiece].Type == Lance)
 							  && ((GOM == Player01 && MousePosY <= 0)
 							  || (GOM == Player02 && MousePosY >= MapSize - 1)))
 
-							  || ((PP.PS[SetMousePosY][SetMousePosX].Type == Knight)
+							  || ((PP.PS[SetPiece].Type == Knight)
 							  && ((GOM == Player01 && MousePosY <= 1)
 							  || (GOM == Player02 && MousePosY >= MapSize - 2)))
 
-							  && PP.PS[SetMousePosY][SetMousePosX].Promoted == false)
+							  && PP.PS[SetPiece].Promoted == false)
 							{
-								PP.PS[MousePosY][MousePosX].Promoted = true;
-								Mode = PlayerProcessing;
+								PP.PS[SetPiece].Promoted = true;
 							}
-							else if (GOM == Player01 && (MousePosY < 3 || SetMousePosY < 3))
+							else if (GOM == Player01 && (MousePosY < 3 || SetMousePosY < 3) && PP.PS[SetPiece].OnBoard == true)
 							{
-								Mode = PromotedWindowProcessing;
+								if (Mode != GameEndProcessing)
+								{
+									Mode = PromotedWindowProcessing;
+								}
 							}
-							else if (GOM == Player02 && (MousePosY > 5 || SetMousePosY > 5))
+							else if (GOM == Player02 && (MousePosY > 5 || SetMousePosY > 5) && PP.PS[SetPiece].OnBoard == true)
 							{
-								Mode = PromotedWindowProcessing;
-							}
-							else
-							{
-								PP.PS[MousePosY][MousePosX].Promoted = PP.PS[SetMousePosY][SetMousePosX].Promoted;
+								if (Mode != GameEndProcessing)
+								{
+									Mode = PromotedWindowProcessing;
+								}
 							}
 							
 							TypeChangeFlag = true;
@@ -497,8 +618,14 @@ int _stdcall WinMain
 						else
 						{
 							PP.PieceChooseableReset();
-							MouseFlag = false;
 						}
+
+						MouseFlag = false;
+					}
+					else
+					{
+						PP.PieceChooseableReset();
+						MouseFlag = false;
 					}
 				}
 				else if (MouseFlag == true && !(pDi->MouseButton(0)))
@@ -520,9 +647,9 @@ int _stdcall WinMain
 			//成るかどうかの処理（ウィンドウ描画）
 			case Game_Mode::PromotedWindowProcessing:
 
-				if (PP.PS[SetMousePosY][SetMousePosX].Type != King
-					&& PP.PS[SetMousePosY][SetMousePosX].Type != GoldGeneral
-					&& PP.PS[SetMousePosY][SetMousePosX].Promoted == false)
+				if (PP.PS[SetPiece].Type != King
+					&& PP.PS[SetPiece].Type != GoldGeneral
+					&& PP.PS[SetPiece].Promoted == false)
 				{
 					WindowFlag = true;
 
@@ -547,25 +674,17 @@ int _stdcall WinMain
 						if (WindowMousePosX >=229&& WindowMousePosX < 341
 						  && WindowMousePosY >= 312 && WindowMousePosY < 344)
 						{
-							PP.PS[MousePosY][MousePosX].Promoted = true;
-							Mode = PlayerProcessing;
-							WindowFlag = false;
-						}
-						else if (WindowMousePosX >= 356 && WindowMousePosX < 468
-							&& WindowMousePosY >= 312 && WindowMousePosY < 344)
-						{
-							PP.PS[MousePosY][MousePosX].Promoted = PP.PS[SetMousePosY][SetMousePosX].Promoted;
-							Mode = PlayerProcessing;
-							WindowFlag = false;
+							PP.PS[SetPiece].Promoted = true;
 						}
 
+						Mode = PlayerProcessing;
+						WindowFlag = false;
 						MouseFlag = false;
 
 					}
 				}
 				else
 				{
-					PP.PS[MousePosY][MousePosX].Promoted = PP.PS[SetMousePosY][SetMousePosX].Promoted;
 					Mode = PlayerProcessing;
 				}
 
@@ -573,6 +692,11 @@ int _stdcall WinMain
 
 			//ゲーム終了
 			case Game_Mode::GameEndProcessing:
+
+				if (pDi->MouseButton(0))
+				{
+					Mode = GameStartProcessing;
+				}
 
 				break;
 
@@ -587,13 +711,55 @@ int _stdcall WinMain
 				//盤の描画
 				spriteImgBoard.Draw(imgBoard);
 
+				for (int i = 0; i < 2; i++)
+				{
+					spriteImgOfBoard[i].Draw(imgOfBoard[i]);
+				}
+
+				for (int i = 0; i < 14; i++)
+				{
+					spriteImgOfPiece[i].Draw(imgOfPiece[i]);
+
+					Count = 0;
+
+					for (int a = 0; a < 40; a++)
+					{
+						if ((i % 7 == 0 && PP.PS[a].Type == Pawn
+							|| i % 7 == 1 && PP.PS[a].Type == Lance
+							|| i % 7 == 2 && PP.PS[a].Type == Knight
+							|| i % 7 == 3 && PP.PS[a].Type == SilverGeneral
+							|| i % 7 == 4 && PP.PS[a].Type == GoldGeneral
+							|| i % 7 == 5 && PP.PS[a].Type == Rook
+							|| i % 7 == 6 && PP.PS[a].Type == Bishop)) 
+						{
+							if (((i < 7 && PP.PS[a].PiecesGOM == Player02)
+								|| (i >= 7 && PP.PS[a].PiecesGOM == Player01))
+								&& PP.PS[a].OnBoard == false)
+							{
+								Count++;
+							}
+						}
+
+					}
+
+					imgOfPieceNumber[i].SetNum(Count%10, 1);
+
+					if (Count >= 10)
+					{
+						imgOfPieceNumber2[i].SetNum(Count / 10, 1);
+						spriteImgOfPieceNumber2[i].Draw(imgOfPieceNumber2[i]);
+					}
+
+					spriteImgOfPieceNumber[i].Draw(imgOfPieceNumber[i]);
+				}
+
 				//駒の描画
 				for (int yCount = 0; yCount < MapSize; yCount++)
 				{
 					for (int xCount = 0; xCount < MapSize; xCount++)
 					{
 						//取ることが可能であれば選択可能カーソルを描画
-						if (PP.PS[yCount][xCount].Chooseable == true)
+						if (PP.Chooseable[yCount][xCount] == true)
 						{
 							//座標設定
 							spriteImgCursor[yCount][xCount].SetPos
@@ -603,121 +769,124 @@ int _stdcall WinMain
 							//描画
 							spriteImgCursor[yCount][xCount].Draw(imgCursor[yCount][xCount]);
 						}
+					}
+				}
 
-						//その駒が盤面に出ているかどうか
-						//そこ駒の状態が無ではないか
-						if (PP.PS[yCount][xCount].Type != Null)
+				for (int Count = 0; Count < 40; Count++)
+				{
+					//その駒が盤面に出ているかどうか
+					//そこ駒の状態が無ではないか
+					if (PP.PS[Count].OnBoard == true)
+					{
+						//その駒が敵だと（90度）反転する
+						switch (PP.PS[Count].PiecesGOM)
 						{
-							//その駒が敵だと（90度）反転する
-							switch (PP.PS[yCount][xCount].PiecesGOM)
+						case Player01:
+							spriteImgPiece[Count].SetAngle(0);
+							break;
+						case Player02:
+							spriteImgPiece[Count].SetAngle(3.1415 / 1);
+							break;;
+						}
+
+						switch (PP.PS[Count].Promoted)
+						{
+
+						//成っていない
+						case false:
+
+							//その駒の種類は
+							switch (PP.PS[Count].Type)
 							{
-							case Player01:
-								spriteImgPiece[yCount][xCount].SetAngle(0);
-								break;
-							case Player02:
-								spriteImgPiece[yCount][xCount].SetAngle(3.1415/1);
-								break;;
-							}
-
-							switch (PP.PS[yCount][xCount].Promoted)
-							{
-
-							//成っていない
-							case false:
-
-								//その駒の種類は
-								switch (PP.PS[yCount][xCount].Type)
-								{
 								//歩
-								case Pawn:
-									imgPiece[yCount][xCount].SetNum(0, 0);
-									break;
+							case Pawn:
+								imgPiece[Count].SetNum(0, 0);
+								break;
 								//香車
-								case Lance:
-									imgPiece[yCount][xCount].SetNum(2, 0);
-									break;
+							case Lance:
+								imgPiece[Count].SetNum(2, 0);
+								break;
 								//桂馬
-								case Knight:
-									imgPiece[yCount][xCount].SetNum(4, 0);
-									break;
+							case Knight:
+								imgPiece[Count].SetNum(4, 0);
+								break;
 								//銀将
-								case SilverGeneral:
-									imgPiece[yCount][xCount].SetNum(6, 0);
-									break;
+							case SilverGeneral:
+								imgPiece[Count].SetNum(6, 0);
+								break;
 								//金将
-								case GoldGeneral:
-									imgPiece[yCount][xCount].SetNum(0, 1);
-									break;
+							case GoldGeneral:
+								imgPiece[Count].SetNum(0, 1);
+								break;
 								//飛車
-								case Rook:
-									imgPiece[yCount][xCount].SetNum(2, 1);
-									break;
+							case Rook:
+								imgPiece[Count].SetNum(2, 1);
+								break;
 								//角行
-								case Bishop:
-									imgPiece[yCount][xCount].SetNum(4, 1);
-									break;
+							case Bishop:
+								imgPiece[Count].SetNum(4, 1);
+								break;
 								//王,玉
-								case King:
-									//どちらの駒か
-									switch (PP.PS[yCount][xCount].PiecesGOM)
-									{
-										//王
-									case Player01:
-										imgPiece[yCount][xCount].SetNum(6, 1);
-										break;
-										//玉
-									case Player02:
-										imgPiece[yCount][xCount].SetNum(7, 1);
-										break;
-									}
+							case King:
+								//どちらの駒か
+								switch (PP.PS[Count].PiecesGOM)
+								{
+									//王
+								case Player01:
+									imgPiece[Count].SetNum(6, 1);
+									break;
+									//玉
+								case Player02:
+									imgPiece[Count].SetNum(7, 1);
 									break;
 								}
-
 								break;
+							}
+
+							break;
 
 							//成っている
-							case true:
+						case true:
 
-								//その駒の種類は
-								switch (PP.PS[yCount][xCount].Type)
-								{
+							//その駒の種類は
+							switch (PP.PS[Count].Type)
+							{
 								//と金
-								case Pawn:
-									imgPiece[yCount][xCount].SetNum(1, 0);
-									break;
+							case Pawn:
+								imgPiece[Count].SetNum(1, 0);
+								break;
 								//成香
-								case Lance:
-									imgPiece[yCount][xCount].SetNum(3, 0);
-									break;
+							case Lance:
+								imgPiece[Count].SetNum(3, 0);
+								break;
 								//成桂
-								case Knight:
-									imgPiece[yCount][xCount].SetNum(5, 0);
-									break;
+							case Knight:
+								imgPiece[Count].SetNum(5, 0);
+								break;
 								//成銀
-								case SilverGeneral:
-									imgPiece[yCount][xCount].SetNum(7, 0);
-									break;
+							case SilverGeneral:
+								imgPiece[Count].SetNum(7, 0);
+								break;
 								//龍王（成車）
-								case Rook:
-									imgPiece[yCount][xCount].SetNum(3, 1);
-									break;
+							case Rook:
+								imgPiece[Count].SetNum(3, 1);
+								break;
 								//竜馬（成角）
-								case Bishop:
-									imgPiece[yCount][xCount].SetNum(5, 1);
-									break;
-								}
-
+							case Bishop:
+								imgPiece[Count].SetNum(5, 1);
 								break;
 							}
 
-							//座標設定
-							spriteImgPiece[yCount][xCount].SetPos
-							((float)xCount * (float)PieceImageSize + (float)PieceImageSize / 2.0 + 32.0,
-								(float)yCount * (float)PieceImageSize + (float)PieceImageSize / 2.0 + 32.0);
-
-							//描画
-							spriteImgPiece[yCount][xCount].Draw(imgPiece[yCount][xCount]);
+							break;
 						}
+
+						//座標設定
+						spriteImgPiece[Count].SetPos
+						((float)PP.PS[Count].x * (float)PieceImageSize + (float)PieceImageSize / 2.0 + 32.0,
+							(float)PP.PS[Count].y * (float)PieceImageSize + (float)PieceImageSize / 2.0 + 32.0);
+
+						//描画
+						spriteImgPiece[Count].Draw(imgPiece[Count]);
 					}
 				}
 
